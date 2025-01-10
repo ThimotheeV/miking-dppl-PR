@@ -64,11 +64,9 @@ lang DPPLParser =
       match expr with TmSolveODE ({ method = ODESolverDefault d } & r) then
         TmSolveODE {
           r with
-          method =
-            odeSolverMethodFromOptions
-              options d.stepSize options.odeSolverMethod,
+          method = RK4 d,
           model = replaceDefaultODESolverMethod options r.model,
-          init = replaceDefaultODESolverMethod options r.model,
+          init = replaceDefaultODESolverMethod options r.init,
           endTime = replaceDefaultODESolverMethod options r.endTime
         }
       else expr
@@ -173,7 +171,7 @@ lang DPPLParser =
   | "Binomial" -> Some (2, lam lst. TmDist {dist = DBinomial {n = get lst 0, p = get lst 1},
                                         ty = TyUnknown {info = info},
                                         info = info})
-  | "Wiener" -> Some (1, lam lst. TmDist {dist = DWiener {a = get lst 0},
+  | "Wiener" -> Some (1, lam lst. TmDist {dist = DWiener {cps = false, a = get lst 0},
                                        ty = TyUnknown {info = info},
                                        info = info})
   | "solveode" -> Some (4, lam lst. TmSolveODE {method = interpretODESolverMethod (get lst 0),
