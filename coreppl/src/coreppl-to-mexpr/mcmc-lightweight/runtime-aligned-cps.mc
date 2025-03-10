@@ -94,14 +94,14 @@ let newSample: all a. use RuntimeDistBase in Dist a -> (Any,Float) = lam dist.
   (unsafeCoerce s, w)
 
 -- Drift Kernel Function
--- - we have access here to the driftScale parameter compileOptions.driftScale
+-- - we have access here to the driftScale parameter compileOptions.driftScales
 -- - modeled on reuseSample
 -- Call one time per run
-let moveSample: all a. a -> Float -> use RuntimeDistBase in Dist a -> (Any, Float) =
-  lam prev. lam w. lam dist.
+let moveSample: all a. a -> Float -> Float -> use RuntimeDistBase in Dist a -> (Any, Float) =
+  lam prev. lam drift. lam w. lam dist.
     use RuntimeDistElementary in
 
-    let drift = compileOptions.driftScale in
+    (if compileOptions.printDriftScale then printLn (float2string drift); () else ());
 
     let kernel = choseKernel dist (unsafeCoerce prev) drift in
 
@@ -177,8 +177,8 @@ let sampleAligned: all a. use RuntimeDistBase in Dist a -> (a -> Result) -> Resu
 let sampleAlignedForceNew: all a. use RuntimeDistBase in Dist a -> (a -> Result) -> Result =
   lam d. sampleAlignedBase newSample d
 
-let sampleAlignedKernel: all a. use RuntimeDistBase in Dist a -> a -> Float -> (a -> Result) -> Result =
-  lam d. lam prev. lam w. sampleAlignedBase (moveSample prev w) d
+let sampleAlignedKernel: all a. use RuntimeDistBase in Dist a -> a -> Float -> Float -> (a -> Result) -> Result =
+  lam d. lam prev. lam drift. lam w. sampleAlignedBase (moveSample prev drift w) d
 
 let sampleUnaligned: all a. Int -> use RuntimeDistBase in Dist a -> a = lam i. lam dist.
   let sample: (Any, Float) =
@@ -225,15 +225,17 @@ let runNext: Unknown -> (State Result -> Result) -> Result =
 
     recursive let rec: Int -> [(Any,Float,Cont Result)] -> [[(Any, Float, Int)]]
                            -> [(Any,Float)]        -> [[(Any, Float, Int)]]
-                           -> Result =
+                           -> [Float] -> Result =
       lam i. lam alignedTrace. lam unalignedTraces.
       lam oldAlignedTrace. lam oldUnalignedTraces.
+      lam driftScale.
         match (alignedTrace,unalignedTraces)
         with ([s1] ++ alignedTrace, [s2] ++ unalignedTraces) then
           if gti i 0 then
             rec (subi i 1) alignedTrace unalignedTraces
               (cons (s1.0, s1.1) oldAlignedTrace)
               (cons (reverse s2) oldUnalignedTraces)
+              (if eqi 1 (length driftScale) then driftScale else tail driftScale)
           else (
             let cont = s1.2 in
             modref state.oldAlignedTrace oldAlignedTrace;
@@ -252,7 +254,7 @@ let runNext: Unknown -> (State Result -> Result) -> Result =
             -- This is where we actually run the program
             -- printLn "A";
             if compileOptions.driftKernel then
-              sampleAlignedKernel cont.dist s1.0 s1.1 cont.cont
+              sampleAlignedKernel cont.dist s1.0 (head driftScale) s1.1 cont.cont
             else
               sampleAlignedForceNew cont.dist cont.cont
           )
@@ -266,7 +268,7 @@ let runNext: Unknown -> (State Result -> Result) -> Result =
     -- printLn (join ["Unaligned traces length: ", int2string (length (deref state.unalignedTraces))]);
     -- printLn (join ["The invalid index is: ", int2string invalidIndex]);
     rec invalidIndex (deref state.alignedTrace) (deref state.unalignedTraces)
-      (emptyList ()) (emptyList ())
+      (emptyList ()) (emptyList ()) compileOptions.driftScales
 
 -- General inference algorithm for aligned MCMC
 let run : Unknown -> (State Result -> Result) -> use RuntimeDistBase in Dist Result =

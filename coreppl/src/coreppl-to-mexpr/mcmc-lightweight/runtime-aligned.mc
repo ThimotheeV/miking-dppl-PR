@@ -25,6 +25,8 @@ type State = {
   -- The Hasting ratio for the driftKernel call
   driftHastingRatio: Ref Float,
 
+  driftScale: Ref Float,
+
   -- The weight of reused values in the previous and current executions
   prevWeightReused: Ref Float,
   weightReused: Ref Float,
@@ -67,6 +69,7 @@ let state: State = {
   weight = ref 0.,
   driftPrevValue = ref ((), 0.),
   driftHastingRatio = ref 0.,
+  driftScale = ref 0.,
   prevWeightReused = ref 0.,
   weightReused = ref 0.,
   alignedTrace = ref (emptyList ()),
@@ -88,7 +91,7 @@ let newSample: all a. use RuntimeDistBase in Dist a -> (Any,Float) = lam dist.
   (unsafeCoerce s, w)
 
 -- Drift Kernel Function
--- - we have access here to the driftScale parameter compileOptions.driftScale
+-- - we have access here to the driftScale parameter compileOptions.driftScales
 -- - modeled on reuseSample
 -- Call one time per run
 let moveSample: all a. use RuntimeDistBase in Dist a -> (Any, Float) = 
@@ -97,7 +100,8 @@ let moveSample: all a. use RuntimeDistBase in Dist a -> (Any, Float) =
 
   let prevSample = deref state.driftPrevValue in
   let prev = prevSample.0 in
-  let drift = compileOptions.driftScale in
+  let drift = deref state.driftScale in
+  (if compileOptions.printDriftScale then printLn (float2string drift); () else ());
 
   let kernel = choseKernel dist (unsafeCoerce prev) drift in
 
@@ -190,14 +194,18 @@ let modTrace: Unknown -> () = lam config.
 
   let alignedTraceLength: Int = deref state.alignedTraceLength in
 
-  recursive let rec: Int -> [(Any,Float)] -> [Option (Any,Float)]
-                       -> [Option (Any,Float)] =
-    lam i. lam samples. lam acc.
+  recursive let rec: Int -> [Float] -> [(Any,Float)] -> [Option (Any,Float)] -> [Option (Any,Float)] =
+    lam i. lam driftScale. lam samples. lam acc.
       match samples with [sample] ++ samples then
         -- Invalidate sample if it has the invalid index
         let acc: [Option (Any, Float)] =
-          cons (if eqi i 0 then modref state.driftPrevValue sample; None () else Some sample) acc in
-        rec (subi i 1) samples acc
+          cons (if eqi i 0 then
+                  modref state.driftPrevValue sample; 
+                  modref state.driftScale (head driftScale);
+                  None ()
+                else Some sample) acc 
+                in
+        rec (subi i 1) (if eqi 1 (length driftScale) then driftScale else tail driftScale) samples acc
 
       else acc
   in
@@ -213,7 +221,7 @@ let modTrace: Unknown -> () = lam config.
     -- One index must always change
     let invalidIndex: Int = uniformDiscreteSample 0 (subi alignedTraceLength 1) in
     modref state.oldAlignedTrace
-      (rec invalidIndex (deref state.alignedTrace) (emptyList ()));
+      (rec invalidIndex compileOptions.driftScales (deref state.alignedTrace) (emptyList ()));
 
     -- Also set correct old unaligned traces (always reused if possible, no
     -- invalidation)

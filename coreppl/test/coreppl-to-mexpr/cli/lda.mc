@@ -37,7 +37,7 @@ utest r (t 500 "-m mcmc-naive"                                  ) with rhs using
 
 -- We need to increase the global step probability. Otherwise, lightweight MCMC
 -- easily gets stuck in a single mode.
-utest r (t 500 "-m mcmc-lightweight --mcmc-lw-gprob 0.5 --align --cps none"    ) with rhs using e in
+utest r (t 500 "-m mcmc-lightweight --mcmc-lw-gprob 0.5 --kernel --driftScale 0.5 --driftScale 0.6 --align --cps none"    ) with rhs using e in
 utest r (t 500 "-m mcmc-lightweight --mcmc-lw-gprob 0.5 --align --cps partial" ) with rhs using e in
 utest r (t 500 "-m mcmc-lightweight --mcmc-lw-gprob 0.5 --align --cps full"    ) with rhs using e in
 utest r (t 500 "-m mcmc-lightweight --mcmc-lw-gprob 0.5"                       ) with rhs using e in

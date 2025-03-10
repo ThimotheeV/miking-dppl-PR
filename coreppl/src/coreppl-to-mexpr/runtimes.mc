@@ -224,8 +224,8 @@ lang LoadRuntime =
 
       -- NOTE(tvirgoulay,2025-01-15): DriftKernel option type
       ("driftKernel", bool_ options.driftKernel),
-      ("driftScale", float_ options.driftScale)
-
+      ("printDriftScale", bool_ options.printDriftScale),
+      ("driftScales", seq_ (map float_ options.driftScales))
     ]) in
 
     let runtimeAsts = map (lam entry. entry.ast) (mapValues entries) in

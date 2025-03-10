@@ -78,7 +78,8 @@ type Options = {
 
   -- Drift kernel activation and scale
   driftKernel: Bool,
-  driftScale: Float
+  printDriftScale: Bool,
+  driftScales: [Float]
 }
 
 -- Default values for options
@@ -113,7 +114,8 @@ let default = {
   subsample = false,
   subsampleSize = 1,
   driftKernel = false,
-  driftScale = 1.0
+  printDriftScale = false,
+  driftScales = []
 }
 
 -- Options configuration
@@ -264,13 +266,16 @@ let config = [
     "Use drift Kernel in MCMC. Use in conjuction with -m mcmc-lightweight",
     lam p: ArgPart Options.
       let o: Options = p.options in {o with driftKernel = true}),
+  
+  ([("--printDriftScale", "", "")], 
+    "Use drift Kernel in MCMC. Use in conjuction with -m mcmc-lightweight",
+    lam p: ArgPart Options.
+      let o: Options = p.options in {o with printDriftScale = true}),
     
-  ([("--drift", " ", "<value>")],
-    join [
-          "Floating point number which corresponds to the standard deviation (sigma) of the normal distribution that will be used for the automatic drift kernel. Default: ", 
-          float2string default.driftScale, "."
-      ],
-      lam p : ArgPart Options. let o : Options = p.options in {o with driftScale = argToFloatMin p 0. })
+  ([("--driftScale", " ", "<value>")],
+    "Can be given multiple times.",
+    lam p: ArgPart Options.
+      let o: Options = p.options in {o with driftScales = snoc o.driftScales (argToFloat p)})
 ]
 
 -- Menu
