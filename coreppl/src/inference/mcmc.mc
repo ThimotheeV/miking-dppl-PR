@@ -56,10 +56,9 @@ lang AutoDriftKernel = Assume + DistAll + LetAsDecl
     let dist = DBeta {a = mulf_ driftScale x, b = mulf_ driftScale (subf_ (float_ 1.) x)} in
     Some (dist_ dist)
 
-  -- WARNING : if (drift > x) => p < 0 --
-  -- exp = x, var = drift --
+  -- exp = x, var = x*drift/x+drift --
   | DBinomial _ ->
-    let pBody = divf_ (subf_ (int2float_ x) driftScale) (int2float_ x) in
+    let pBody = subf_ (float_ 1.0) (divf_ driftScale (addf_ (int2float_ x) driftScale)) in
     let pName = nameSym "p" in
     let p = nvar_ pName in
     Some (bind_ (nulet_ pName pBody) (dist_ (DBinomial {n = ceilfi_ (divf_ (int2float_ x) p), p = p})))
@@ -86,10 +85,9 @@ lang AutoDriftKernel = Assume + DistAll + LetAsDecl
   | DGaussian _ ->
     Some (dist_ (DGaussian {mu = x, sigma = driftScale}))
 
-  -- WARNING : if (drift > x) => p < 0 --
-  -- exp = x, var = drift --
+  -- exp = x, var = x*drift/x+drift --
   | DGeometric _ ->
-    let pBody = divf_ (subf_ (int2float_ x) driftScale) (int2float_ x) in
+    let pBody = subf_ (float_ 1.0) (divf_ driftScale (addf_ (int2float_ x) driftScale)) in
     let pName = nameSym "p" in
     let p = nvar_ pName in
     Some (bind_ (nulet_ pName pBody) (dist_ (DBinomial {n = ceilfi_ (divf_ (int2float_ x) p), p = p})))
@@ -99,18 +97,16 @@ lang AutoDriftKernel = Assume + DistAll + LetAsDecl
   -- | DMultinomial _ ->
   --  Some (dist_ (DMultinomial {n = ceilfi_ driftScale, p = map_ (ulam_ "x" (divf_ (var_ "x") (ceilfi_ driftScale))) (map_ (ulam_ "x" (int2float_ (var_ "x"))) x)}))
 
-  -- WARNING : if (drift > x) => p < 0 --
-  -- exp = x, var = drift --
+  -- exp = x, var = x*drift/x+drift --
   | DNegBinomial _ ->
-    let pBody = divf_ (subf_ (int2float_ x) driftScale) (int2float_ x) in
+    let pBody = subf_ (float_ 1.0) (divf_ driftScale (addf_ (int2float_ x) driftScale)) in
     let pName = nameSym "p" in
     let p = nvar_ pName in
     Some (bind_ (nulet_ pName pBody) (dist_ (DNegBinomial {n = ceilfi_ (divf_ (int2float_ x) p), p = p})))
 
-  -- WARNING : if (drift > x) => p < 0 --
-  -- exp = x, var = drift --
+  -- exp = x, var = x*drift/x+drift --
   | DPoisson _ ->
-    let pBody = divf_ (subf_ (int2float_ x) driftScale) (int2float_ x) in
+    let pBody = subf_ (float_ 1.0) (divf_ driftScale (addf_ (int2float_ x) driftScale)) in
     let pName = nameSym "p" in
     let p = nvar_ pName in
     Some (bind_ (nulet_ pName pBody) (dist_ (DBinomial {n = ceilfi_ (divf_ (int2float_ x) p), p = p})))
