@@ -229,8 +229,8 @@ let run : all acc. all dAcc. all a. Config a acc dAcc -> (State -> a) -> use Run
       let weight = deref state.weight in
       if or (leqf weight (log 0.0)) (isNaN weight) then
         resetState state;
-        (if eqi i maxInitReSamp then 
-          printErrorLn "Impossible to find a first sample with positive probability. Check your model and the parameters of your priors.";
+        (if eqi maxInitReSamp i then
+          printErrorLn (join ["Unable to find a sample with positive probability in ", int2string (i), " iterations. Set a higher value with --mcmc-max-init-rs <number>."]);
           -- printLn (join ["Try ", int2string i, " at sampling positive prob. sample. Sample weight: ", float2string (weight)]);
           exit 1
         else ());

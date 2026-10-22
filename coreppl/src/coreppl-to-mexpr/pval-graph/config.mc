@@ -33,8 +33,8 @@ let simplePValGraphMCMC : all ret. SimpleMCMCConfig -> SimplePValRun ret = lam c
     recursive let init = lam i.
       let res = interface.instantiate () in
       if eqf (interface.getWeight res.instance) (negf inf) then
-        (if eqi config.maxInitReSamp i then 
-          -- printErrorLn "Impossible to find a first sample with positive probability. Check your model and the parameters of your priors.";
+        (if eqi config.maxInitReSamp i then
+          -- printErrorLn (join ["Unable to find a sample with positive probability in ", int2string (i), " iterations. Set a higher value with --mcmc-max-init-rs <number>."]);
           -- printLn (join ["Try ", int2string i, " at sampling positive prob. sample. Sample weight: ", float2string (weight)]);
           exit 1
         else ());

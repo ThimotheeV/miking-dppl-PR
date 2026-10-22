@@ -46,8 +46,8 @@ let run : all a. Unknown -> (State -> a) -> use RuntimeDistBase in Dist a =
       let weight = deref state in
       if or (leqf weight (log 0.0)) (isNaN weight) then
         modref state 0.;
-        (if eqi i maxInitReSamp then 
-          printErrorLn "Impossible to find a first sample with positive probability. Check your model and the parameters of your priors.";
+        (if eqi maxInitReSamp i then
+          printErrorLn (join ["Unable to find a sample with positive probability in ", int2string (i), " iterations. Set a higher value with --mcmc-max-init-rs <number>."]);
           -- printLn (join ["Try ", int2string i, " at sampling positive prob. sample. Sample weight: ", float2string (weight)]);
           exit 1
         else ());

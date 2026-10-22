@@ -118,14 +118,10 @@ let run : all a. Unknown -> (State -> a) -> use RuntimeDistBase in Dist a =
     lam model. lam state. lam maxInitReSamp. lam i.
       let sample = model state in
       let weight = deref state.weight in
-      let trace = deref state.trace in
-      let traceLength = deref state.traceLength in
-      let oldTrace = deref state.oldTrace in
-      let cut = deref state.cut in
       if or (leqf weight (log 0.0)) (isNaN weight) then
         resetState state;
-        (if eqi i maxInitReSamp then 
-          printErrorLn "Impossible to find a first sample with positive probability. Check your model and the parameters of your priors.";
+        (if eqi maxInitReSamp i then
+          printErrorLn (join ["Unable to find a sample with positive probability in ", int2string (i), " iterations. Set a higher value with --mcmc-max-init-rs <number>."]);
           -- printLn (join ["Try ", int2string i, " at sampling positive prob. sample. Sample weight: ", float2string (weight)]);
           exit 1
         else ());
